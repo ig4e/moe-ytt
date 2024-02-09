@@ -2,20 +2,39 @@ import { config } from "dotenv";
 import { Input, Markup, Telegraf } from "telegraf";
 import { fmt, link } from "telegraf/format";
 import { generateVideoURL, getLatestVideo, getVideo } from "./utils";
-
+import { CronJob } from "cron";
 config();
 
 const client = new Telegraf(process.env.BOT_TOKEN!);
+
 const channelIDs = ["UCspaL6aZFjs5ChH0eaiakpw", "UC1bacrDsGPF_9LGfXPgEW-Q", "UCOghQW-IaXHoGphX0M3ZmWw"];
+const chatIDs = [1885533743];
+
+CronJob.from({
+	cronTime: "0 0 * * *",
+	onTick: async function () {
+		channelIDs.map(async (channelId) => {
+			const video = await getLatestVideo(channelId);
+
+			const buttons = Markup.inlineKeyboard([Markup.button.callback(`Download ${video.title}`, `videoId:${video.id}`)]);
+
+			return sendMessages(fmt`${link(video.title, generateVideoURL(video.id))}`, buttons);
+		});
+
+		console.log(`Sent latest videos to ${chatIDs.length} chat(s)`);
+	},
+	start: true,
+	timeZone: "America/Los_Angeles",
+});
 
 client.start((ctx) => {
-	const commands = Markup.keyboard(["/ping", "/get_latest", "/download_latest"]).resize().oneTime();
+	const commands = Markup.keyboard(["/ping", "/get_latest"]).resize().oneTime();
 
 	return ctx.reply("Welcome", commands);
 });
 
 client.command("ping", (ctx) => {
-	ctx.reply("Pong!");
+	ctx.reply(`Pong!, chatId: ${ctx.chat.id}`);
 });
 
 client.command("get_latest", async (ctx) => {
@@ -28,7 +47,7 @@ client.command("get_latest", async (ctx) => {
 	});
 });
 
-client.action(/:(.+)/, async (ctx, next) => {
+client.action(/:(.+)/, async (ctx) => {
 	try {
 		const videoId = ctx.match[1];
 		const { title, stream } = await getVideo(videoId);
@@ -38,6 +57,11 @@ client.action(/:(.+)/, async (ctx, next) => {
 		return ctx.reply("Error");
 	}
 });
+
+function sendMessages(...props: any[]) {
+	//@ts-expect-error
+	return chatIDs.map((chatId) => client.telegram.sendMessage(chatId, ...props));
+}
 
 launch();
 

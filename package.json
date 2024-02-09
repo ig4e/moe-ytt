@@ -4,6 +4,7 @@
 		"start": "ts-node src/index.ts"
 	},
 	"dependencies": {
+		"cron": "^3.1.6",
 		"dotenv": "^16.4.1",
 		"nodemon": "^3.0.3",
 		"progress-estimator": "^0.3.1",
