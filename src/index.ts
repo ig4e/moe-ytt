@@ -15,7 +15,6 @@ CronJob.from({
 	onTick: async function () {
 		channelIDs.map(async (channelId) => {
 			const video = await getLatestVideo(channelId);
-
 			const buttons = Markup.inlineKeyboard([Markup.button.callback(`Download ${video.title}`, `videoId:${video.id}`)]);
 
 			return sendMessages(fmt`${link(video.title, generateVideoURL(video.id))}`, buttons);
@@ -40,7 +39,6 @@ client.command("ping", (ctx) => {
 client.command("get_latest", async (ctx) => {
 	channelIDs.map(async (channelId) => {
 		const video = await getLatestVideo(channelId);
-
 		const buttons = Markup.inlineKeyboard([Markup.button.callback(`Download ${video.title}`, `videoId:${video.id}`)]);
 
 		return ctx.sendMessage(fmt`${link(video.title, generateVideoURL(video.id))}`, buttons);
