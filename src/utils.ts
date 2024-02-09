@@ -17,7 +17,7 @@ export async function getLatestVideo(channelId: string) {
 
 export async function getVideo(id: string) {
 	const videoData = await ytdl.getBasicInfo(`https://youtu.be/${id}`);
-	const video = ytdl(`https://youtu.be/${id}`, { quality: "highestaudio" });
+	const video = ytdl(`https://youtu.be/${id}`, { quality: "lowestaudio" });
 
 	return {
 		...videoData.videoDetails,
