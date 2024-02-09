@@ -3,6 +3,7 @@ import { Input, Markup, Telegraf } from "telegraf";
 import { fmt, link } from "telegraf/format";
 import { generateVideoURL, getLatestVideo, getVideo } from "./utils";
 import { CronJob } from "cron";
+import express from "express";
 config();
 
 const client = new Telegraf(process.env.BOT_TOKEN!);
@@ -66,6 +67,11 @@ launch();
 // Enable graceful stop
 process.once("SIGINT", () => client.stop("SIGINT"));
 process.once("SIGTERM", () => client.stop("SIGTERM"));
+
+const app = express();
+
+app.get("/", (req, res) => res.json({ message: "I'm better than god, I exist." }));
+app.listen(process.env.PORT, () => console.log(`Server is running on port ${process.env.PORT}`));
 
 function launch() {
 	console.log(`MoeYTT is starting...`);
