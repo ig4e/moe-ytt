@@ -1,35 +1,55 @@
 import { config } from "dotenv";
-import { Input, Markup, Telegraf } from "telegraf";
-import { fmt, link } from "telegraf/format";
-import { generateVideoURL, getLatestVideo, getVideo } from "./utils";
+config();
+
 import { CronJob } from "cron";
 import express from "express";
-config();
+import { Input, Markup, Telegraf } from "telegraf";
+import { fmt, link } from "telegraf/format";
+import { generateVideoURL, getLatestVideo, getLatestVideos, getVideo } from "./utils";
+import { db, videos as videosTable } from "./db";
+import { eq } from "drizzle-orm";
+import { filesize } from "filesize";
+const app = express();
 
 const client = new Telegraf(process.env.BOT_TOKEN!);
 
-const channelIDs = ["UCspaL6aZFjs5ChH0eaiakpw", "UC1bacrDsGPF_9LGfXPgEW-Q", "UCOghQW-IaXHoGphX0M3ZmWw"];
-const chatIDs = [1885533743];
+export const channelIDs = ["UCspaL6aZFjs5ChH0eaiakpw", "UC1bacrDsGPF_9LGfXPgEW-Q", "UCOghQW-IaXHoGphX0M3ZmWw"];
+export const chatIDs = [1885533743];
 
-CronJob.from({
-	cronTime: "0 0 * * *",
+const job = CronJob.from({
+	cronTime: "0 * * * *",
 	onTick: async function () {
-		channelIDs.map(async (channelId) => {
-			const video = await getLatestVideo(channelId);
-			const buttons = Markup.inlineKeyboard([Markup.button.callback(`Download ${video.title}`, `videoId:${video.id}`)]);
+		console.log(`[MoeYTT] Trying to send fetch & send latest videos`);
 
-			return sendMessages(fmt`${link(video.title, generateVideoURL(video.id))}`, buttons);
-		});
+		const videos = await getLatestVideos();
 
-		console.log(`Sent latest videos to ${chatIDs.length} chat(s)`);
+		const sentVideos = (
+			await Promise.all(
+				videos.map(async (video) => {
+					const isInDB = await db.query.videos.findFirst({
+						where: eq(videosTable.id, video.id),
+					});
+
+					if (isInDB) {
+						return false;
+					} else {
+						await db.insert(videosTable).values({ id: video.id, name: video.title });
+					}
+
+					const buttons = Markup.inlineKeyboard([Markup.button.callback(`Download ${video.title}`, `videoId:${video.id}`)]);
+					sendMessages(fmt`${link(video.title, generateVideoURL(video.id))}`, buttons);
+					return true;
+				}),
+			)
+		).filter((result) => result === true);
+
+		console.log(`[MoeYTT] Sent ${sentVideos.length} videos to ${chatIDs.length} chat(s)`);
 	},
-	start: true,
 	timeZone: "America/Los_Angeles",
 });
 
 client.start((ctx) => {
 	const commands = Markup.keyboard(["/ping", "/get_latest"]).resize().oneTime();
-
 	return ctx.reply("Welcome", commands);
 });
 
@@ -49,9 +69,18 @@ client.command("get_latest", async (ctx) => {
 client.action(/:(.+)/, async (ctx) => {
 	try {
 		const videoId = ctx.match[1];
-		const { title, stream } = await getVideo(videoId);
+		const { title, stream, thumbnails, format, lengthSeconds } = await getVideo(videoId);
 
-		return ctx.replyWithAudio(Input.fromReadableStream(stream, title));
+		const bitrateBps = format.bitrate!;
+		const durationSeconds = parseInt(format.approxDurationMs!) / 1000;
+		const fileSizeBytes = (bitrateBps * durationSeconds) / 8;
+
+		return ctx.replyWithAudio(Input.fromReadableStream(stream, title), {
+			title,
+			thumbnail: Input.fromURLStream(thumbnails[0].url),
+			caption: fmt`${filesize(fileSizeBytes)}`,
+			duration: durationSeconds,
+		});
 	} catch {
 		return ctx.reply("Error");
 	}
@@ -68,17 +97,17 @@ launch();
 process.once("SIGINT", () => client.stop("SIGINT"));
 process.once("SIGTERM", () => client.stop("SIGTERM"));
 
-process.on("unhandledRejection", (reason, p) => {
-	console.log("Unhandled Rejection at: Promise", p, "reason:", reason);
-	// application specific logging, throwing an error, or other logic here
-});
-
-const app = express();
+// process.on("unhandledRejection", (reason, p) => {
+// 	console.log("Unhandled Rejection at: Promise", p, "reason:", reason);
+// 	// application specific logging, throwing an error, or other logic here
+// });
 
 app.get("/", (req, res) => res.json({ message: "I'm better than god, I exist." }));
-app.listen(process.env.PORT, () => console.log(`Server is running on port ${process.env.PORT}`));
 
 function launch() {
-	console.log(`MoeYTT is starting...`);
+	console.log(`[MoeYTT] Starting...`);
+	app.listen(process.env.PORT, () => console.log(`[MoeYTT] Webserver is running on port ${process.env.PORT}`));
+	job.start();
+	console.log(`[MoeYTT] CronJob started!`);
 	client.launch();
 }

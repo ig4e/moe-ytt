@@ -1,5 +1,15 @@
 import youtubedl, { Payload } from "youtube-dl-exec";
 import ytdl from "ytdl-core";
+import { channelIDs } from ".";
+
+export async function getLatestVideos() {
+	return Promise.all(
+		channelIDs.map(async (channelId) => {
+			const video = await getLatestVideo(channelId);
+			return video;
+		}),
+	);
+}
 
 export async function getLatestVideo(channelId: string) {
 	const channel = (await youtubedl(`https://www.youtube.com/channel/${channelId}/videos`, {
@@ -16,11 +26,13 @@ export async function getLatestVideo(channelId: string) {
 }
 
 export async function getVideo(id: string) {
-	const videoData = await ytdl.getBasicInfo(`https://youtu.be/${id}`);
-	const video = ytdl(`https://youtu.be/${id}`, { quality: "lowestaudio" });
+	const videoData = await ytdl.getInfo(`https://youtu.be/${id}`);
+	const format = ytdl.chooseFormat(videoData.formats, { quality: "lowestaudio" });
+	const video = ytdl.downloadFromInfo(videoData, { quality: "lowestaudio", filter: (format) => !format.hasVideo && format.hasAudio });
 
 	return {
 		...videoData.videoDetails,
+		format,
 		stream: video,
 	};
 }
