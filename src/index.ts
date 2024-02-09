@@ -97,10 +97,10 @@ launch();
 process.once("SIGINT", () => client.stop("SIGINT"));
 process.once("SIGTERM", () => client.stop("SIGTERM"));
 
-// process.on("unhandledRejection", (reason, p) => {
-// 	console.log("Unhandled Rejection at: Promise", p, "reason:", reason);
-// 	// application specific logging, throwing an error, or other logic here
-// });
+process.on("unhandledRejection", (reason, p) => {
+	console.log("Unhandled Rejection at: Promise", p, "reason:", reason);
+	// application specific logging, throwing an error, or other logic here
+});
 
 app.get("/", (req, res) => res.json({ message: "I'm better than god, I exist." }));
 
