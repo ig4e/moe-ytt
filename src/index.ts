@@ -2,14 +2,15 @@ import { config } from "dotenv";
 config();
 
 import { CronJob } from "cron";
+import { eq } from "drizzle-orm";
 import express from "express";
+import { filesize } from "filesize";
 import { Input, Markup, Telegraf } from "telegraf";
 import { fmt, link } from "telegraf/format";
-import { generateVideoURL, getLatestVideo, getLatestVideos, getVideo } from "./utils";
-import { db, videos as videosTable } from "./db";
-import { eq } from "drizzle-orm";
-import { filesize } from "filesize";
 import { channelIDs, chatIDs } from "./config";
+import { db } from "./db";
+import { videos as videosTable } from "./db/schema";
+import { generateVideoURL, getLatestVideo, getLatestVideos, getVideo } from "./utils";
 const app = express();
 
 const client = new Telegraf(process.env.BOT_TOKEN!);
