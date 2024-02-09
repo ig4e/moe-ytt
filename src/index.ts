@@ -68,9 +68,9 @@ client.command("get_latest", async (ctx) => {
 client.action(/:(.+)/, async (ctx) => {
 	try {
 		const videoId = ctx.match[1];
-		const { title, stream, thumbnails, format, lengthSeconds } = await getVideo(videoId);
+		const { title, stream, thumbnails, format } = await getVideo(videoId);
 
-		const bitrateBps = format.bitrate!;
+		const bitrateBps = format.bitrate! * (1000 / 1024);
 		const durationSeconds = parseInt(format.approxDurationMs!) / 1000;
 		const fileSizeBytes = (bitrateBps * durationSeconds) / 8;
 
