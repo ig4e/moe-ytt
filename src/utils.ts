@@ -1,6 +1,6 @@
 import youtubedl, { Payload } from "youtube-dl-exec";
 import ytdl from "ytdl-core";
-import { channelIDs } from ".";
+import { channelIDs } from "./config";
 
 export async function getLatestVideos() {
 	return Promise.all(

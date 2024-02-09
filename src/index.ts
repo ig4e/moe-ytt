@@ -9,12 +9,10 @@ import { generateVideoURL, getLatestVideo, getLatestVideos, getVideo } from "./u
 import { db, videos as videosTable } from "./db";
 import { eq } from "drizzle-orm";
 import { filesize } from "filesize";
+import { channelIDs, chatIDs } from "./config";
 const app = express();
 
 const client = new Telegraf(process.env.BOT_TOKEN!);
-
-export const channelIDs = ["UCspaL6aZFjs5ChH0eaiakpw", "UC1bacrDsGPF_9LGfXPgEW-Q", "UCOghQW-IaXHoGphX0M3ZmWw"];
-export const chatIDs = [1885533743];
 
 const job = CronJob.from({
 	cronTime: "0 * * * *",
